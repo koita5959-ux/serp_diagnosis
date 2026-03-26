@@ -123,8 +123,9 @@ function parseAdContainer2026(container, position, adsList) {
     let title = "";
     // リンク内のテキスト（長めのもの優先）
     const linkText = a.textContent.trim();
-    if (linkText.length > 5 && linkText.length < 200) {
-      title = linkText;
+    const cleanedLinkText = cleanTitle(linkText);
+    if (cleanedLinkText.length > 5 && cleanedLinkText.length < 200) {
+      title = cleanedLinkText;
     }
     // タイトルが短すぎる場合、周辺を探す
     if (title.length < 5) {
@@ -132,7 +133,7 @@ function parseAdContainer2026(container, position, adsList) {
       if (parent) {
         const texts = parent.querySelectorAll("div, span");
         for (const t of texts) {
-          const txt = t.textContent.trim();
+          const txt = cleanTitle(t.textContent.trim());
           if (txt.length > 10 && txt.length < 200 && !t.querySelector("a")) {
             title = txt.substring(0, 100);
             break;
@@ -158,7 +159,7 @@ function parseBlockForAd(block, position) {
     const candidate = cleanUrl(a.href);
     if (candidate) {
       url = candidate;
-      const text = a.textContent.trim();
+      const text = cleanTitle(a.textContent.trim());
       if (text.length > 5 && text.length < 200) {
         title = text;
       }
@@ -168,13 +169,13 @@ function parseBlockForAd(block, position) {
 
   if (!title) {
     const h3 = block.querySelector("h3");
-    if (h3) title = h3.textContent.trim();
+    if (h3) title = cleanTitle(h3.textContent.trim());
   }
   if (!title) {
     // 最初の目立つテキストをタイトルにする
     const divs = block.querySelectorAll("div, span");
     for (const d of divs) {
-      const t = d.textContent.trim();
+      const t = cleanTitle(d.textContent.trim());
       if (t.length > 10 && t.length < 150 && t !== "スポンサー" && t !== "Sponsored") {
         title = t;
         break;
@@ -197,6 +198,7 @@ function extractOrganic(organicList) {
   if (!searchContainer) return;
 
   let rank = 1;
+  const seenUrls = new Set();  // 重複チェック用
 
   // 方法1: div.MjjYud ベース（2026年版Google）
   const mjjBlocks = searchContainer.querySelectorAll("div.MjjYud");
@@ -207,6 +209,8 @@ function extractOrganic(organicList) {
 
       const results = parseMjjYudBlock(block, rank);
       for (const result of results) {
+        if (seenUrls.has(result.url)) continue;
+        seenUrls.add(result.url);
         organicList.push(result);
         rank++;
       }
@@ -223,6 +227,8 @@ function extractOrganic(organicList) {
 
         const result = parseOrganicBlock(block, rank);
         if (result) {
+          if (seenUrls.has(result.url)) continue;
+          seenUrls.add(result.url);
           organicList.push(result);
           rank++;
         }
@@ -237,6 +243,8 @@ function extractOrganic(organicList) {
       if (h3.closest("#tads") || h3.closest("#bottomads")) continue;
       const result = parseFromH3_2026(h3, rank);
       if (result) {
+        if (seenUrls.has(result.url)) continue;
+        seenUrls.add(result.url);
         organicList.push(result);
         rank++;
       }
@@ -253,7 +261,7 @@ function parseMjjYudBlock(block, startRank) {
   const h3s = block.querySelectorAll("h3");
 
   for (const h3 of h3s) {
-    const title = h3.textContent.trim();
+    const title = cleanTitle(h3.textContent.trim());
     if (!title) continue;
 
     // 「地図」「さらに表示」などの非結果h3をスキップ
@@ -288,7 +296,7 @@ function parseMjjYudBlock(block, startRank) {
       const linkContainer = a.closest("div") || a.parentElement;
       if (!linkContainer) continue;
 
-      let title = a.textContent.trim();
+      let title = cleanTitle(a.textContent.trim());
       if (title.length < 5 || title.length > 200) continue;
 
       // 明らかに検索結果ではないものをスキップ
@@ -344,6 +352,20 @@ function parseFromH3_2026(h3, rank) {
   let snippet = findSnippet(h3, null);
 
   return { rank, title, url, snippet };
+}
+
+
+// =====================
+// タイトルクリーニング
+// =====================
+
+function cleanTitle(text) {
+  if (!text) return "";
+  // URL文字列を除去（http:// または https:// で始まる部分）
+  let cleaned = text.replace(/https?:\/\/[^\s\u3000]+/g, "").trim();
+  // 連続する空白を1つに
+  cleaned = cleaned.replace(/\s+/g, " ");
+  return cleaned;
 }
 
 

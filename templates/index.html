@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SERP診断ツール</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>SERP診断ツール</h1>
+            <p class="subtitle">Google検索結果構造分析</p>
+        </header>
+
+        <div class="card">
+            <h2>使い方</h2>
+            <div class="usage-steps">
+                <div class="step">
+                    <span class="step-num">1</span>
+                    <span>Chrome拡張「SERP診断 読み取りツール」をインストール</span>
+                </div>
+                <div class="step">
+                    <span class="step-num">2</span>
+                    <span>Chromeで Google検索を実行</span>
+                </div>
+                <div class="step">
+                    <span class="step-num">3</span>
+                    <span>拡張の「読み取り」ボタンで検索結果を取得（複数ページ可）</span>
+                </div>
+                <div class="step">
+                    <span class="step-num">4</span>
+                    <span>「分析」ボタンで結果をサーバーに送信 → 分析結果がこのページに表示される</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>セッション一覧</h2>
+            {% if sessions %}
+            <table class="session-table">
+                <thead>
+                    <tr>
+                        <th>日時</th>
+                        <th>検索フレーズ</th>
+                        <th>件数</th>
+                        <th>状態</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in sessions %}
+                    <tr>
+                        <td>{{ s.created_at }}</td>
+                        <td>{{ s.query }}</td>
+                        <td>{{ s.result_count }}件</td>
+                        <td>
+                            <span class="status-badge status-{{ s.status }}">{{ s.status }}</span>
+                        </td>
+                        <td>
+                            {% if s.status in ['completed', 'partial'] %}
+                            <a href="/results/{{ s.id }}" class="btn-link">結果を見る</a>
+                            <a href="/export/{{ s.id }}" class="btn-link">CSV</a>
+                            {% elif s.status == 'running' %}
+                            <span class="status-running-text">分析中...</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="empty-message">まだセッションがありません。Chrome拡張から検索結果を送信してください。</p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,5 @@
+flask
+playwright
+requests
+beautifulsoup4
+chardet

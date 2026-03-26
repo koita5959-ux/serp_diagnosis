@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "SERP診断 読み取りツール",
+  "version": "1.0",
+  "description": "Google検索結果を読み取り、SERP診断サーバーに送信する",
+  "permissions": ["activeTab", "storage"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.google.co.jp/search*",
+        "https://www.google.com/search*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

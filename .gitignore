@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+data/*.db
+*.log
+*.bak
+serp_diagnosis.zip

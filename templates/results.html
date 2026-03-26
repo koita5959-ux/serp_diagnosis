@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分析結果 - SERP診断ツール</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>SERP診断ツール</h1>
+            <p class="subtitle">分析結果</p>
+        </header>
+
+        <div class="card">
+            <div class="result-header">
+                <div>
+                    <h2>「{{ session.query }}」</h2>
+                    <p class="meta">モード: {{ session.device }} | 実行日時: {{ session.created_at }} | 状態: {{ session.status }}</p>
+                </div>
+                <a href="/export/{{ session.id }}" class="btn-primary">CSVエクスポート</a>
+            </div>
+        </div>
+
+        <!-- 地域タブ -->
+        <div class="tab-container">
+            <div class="tab-nav">
+                {% for loc_name in location_names %}
+                <button class="tab-btn {% if loop.first %}active{% endif %}"
+                        onclick="switchTab('{{ loc_name }}', this)">
+                    {{ loc_name }}
+                </button>
+                {% endfor %}
+            </div>
+
+            {% for loc_name in location_names %}
+            {% set data = locations_data.get(loc_name, {}) %}
+            <div class="tab-content {% if loop.first %}active{% endif %}" id="tab-{{ loc_name }}">
+
+                <!-- サマリーパネル -->
+                <div class="summary-panel">
+                    <div class="summary-grid">
+                        <div class="summary-item summary-ad">
+                            <span class="summary-label">広告</span>
+                            <span class="summary-value">{{ data.top_ads_count + data.bottom_ads_count }}件</span>
+                            <span class="summary-detail">上部{{ data.top_ads_count }}件・下部{{ data.bottom_ads_count }}件</span>
+                        </div>
+                        <div class="summary-item summary-portal">
+                            <span class="summary-label">ポータル・大手</span>
+                            <span class="summary-value">{{ data.portal_count }}件</span>
+                        </div>
+                        <div class="summary-item summary-seo-yes">
+                            <span class="summary-label">企業HP（SEOあり）</span>
+                            <span class="summary-value">{{ data.seo_yes_count }}件</span>
+                        </div>
+                        <div class="summary-item summary-seo-no">
+                            <span class="summary-label">企業HP（SEOなし）</span>
+                            <span class="summary-value">{{ data.seo_no_count }}件</span>
+                            <span class="summary-detail">← ターゲット候補</span>
+                        </div>
+                        <div class="summary-item summary-other">
+                            <span class="summary-label">その他</span>
+                            <span class="summary-value">{{ data.other_public + data.other_media }}件</span>
+                        </div>
+                    </div>
+
+                    {% for comment in data.comments %}
+                    <div class="diagnosis-comment">{{ comment }}</div>
+                    {% endfor %}
+                </div>
+
+                <!-- 結果一覧テーブル -->
+                <div class="result-table-wrapper">
+                    <table class="result-table">
+                        <thead>
+                            <tr>
+                                <th>順位</th>
+                                <th>分類</th>
+                                <th>タイトル</th>
+                                <th>ドメイン</th>
+                                <th>SEO指標</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in data.results %}
+                            <tr>
+                                <td>
+                                    {% if r.is_ad %}
+                                    <span class="ad-label">広告</span>
+                                    {% else %}
+                                    {{ r.rank }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge badge-{{ r.category | replace('（', '-') | replace('）', '') | replace('・', '-') }}">
+                                        {{ r.category }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{{ r.url }}" target="_blank" rel="noopener" class="result-link">
+                                        {{ r.title }}
+                                    </a>
+                                </td>
+                                <td class="domain-cell">
+                                    {% if r.url %}
+                                    {{ r.url.split('/')[2] if r.url.startswith('http') else r.url }}
+                                    {% endif %}
+                                </td>
+                                <td class="seo-indicators">
+                                    {% if not r.is_ad %}
+                                    <span title="meta description" class="indicator {% if r.has_meta_desc %}on{% else %}off{% endif %}">M</span>
+                                    <span title="構造化データ" class="indicator {% if r.has_structured_data %}on{% else %}off{% endif %}">S</span>
+                                    <span title="OGP" class="indicator {% if r.has_ogp %}on{% else %}off{% endif %}">O</span>
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="bottom-actions">
+            <a href="/" class="btn-link">トップに戻る</a>
+            <a href="/export/{{ session.id }}" class="btn-link">CSVエクスポート</a>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(locName, btn) {
+            // タブボタンの切替
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // タブコンテンツの切替
+            document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+            document.getElementById('tab-' + locName).classList.add('active');
+        }
+    </script>
+</body>
+</html>

@@ -142,5 +142,25 @@
             document.getElementById('tab-' + locName).classList.add('active');
         }
     </script>
+
+    {% if session.status == 'running' %}
+    <script>
+    (function() {
+        const sessionId = "{{ session.id }}";
+        const interval = setInterval(async () => {
+            try {
+                const res = await fetch(`/api/status/${sessionId}`);
+                const data = await res.json();
+                if (data.status !== "running") {
+                    clearInterval(interval);
+                    location.reload();
+                }
+            } catch (e) {
+                console.error("ステータス確認エラー:", e);
+            }
+        }, 3000);
+    })();
+    </script>
+    {% endif %}
 </body>
 </html>

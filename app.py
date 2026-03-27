@@ -161,6 +161,18 @@ def _run_analysis(session_id, location_label, all_organic, all_ads):
         update_session_status(session_id, "error")
 
 
+@app.route("/api/status/<session_id>")
+def api_status(session_id):
+    """セッションのステータスを返す"""
+    session = get_session(session_id)
+    if not session:
+        return jsonify({"error": "セッションが見つかりません"}), 404
+    return jsonify({
+        "status": session["status"],
+        "result_count": get_results_count(session_id),
+    })
+
+
 @app.route("/results/<session_id>")
 def results(session_id):
     session = get_session(session_id)

@@ -42,9 +42,14 @@ function extractQuery() {
 
 
 function extractPageNumber() {
+  // URLのstartパラメータがあればそれを使う（ページ遷移型）
   const params = new URLSearchParams(location.search);
   const start = parseInt(params.get("start") || "0");
-  return Math.floor(start / 10) + 1;
+  if (start > 0) {
+    return Math.floor(start / 10) + 1;
+  }
+  // startがない場合は1を返す（追加読み込み型は全結果を1回で取得）
+  return 1;
 }
 
 
@@ -97,7 +102,7 @@ function extractAds(adsList) {
 function parseAdContainer2026(container, position, adsList) {
   // 2026年版: #tads内でh3がない場合、外部リンク+テキストで広告を構築
   // まずh3ベースを試す
-  const h3s = container.querySelectorAll("h3");
+  const h3s = container.querySelectorAll('h3, [role="heading"][aria-level="3"]');
   if (h3s.length > 0) {
     for (const h3 of h3s) {
       const title = h3.textContent.trim();
@@ -168,7 +173,7 @@ function parseBlockForAd(block, position) {
   }
 
   if (!title) {
-    const h3 = block.querySelector("h3");
+    const h3 = block.querySelector('h3, [role="heading"][aria-level="3"]');
     if (h3) title = cleanTitle(h3.textContent.trim());
   }
   if (!title) {
@@ -238,7 +243,7 @@ function extractOrganic(organicList) {
 
   // 方法3: h3ベース（最終フォールバック）
   if (organicList.length === 0) {
-    const h3s = searchContainer.querySelectorAll("h3");
+    const h3s = searchContainer.querySelectorAll('h3, [role="heading"][aria-level="3"]');
     for (const h3 of h3s) {
       if (h3.closest("#tads") || h3.closest("#bottomads")) continue;
       const result = parseFromH3_2026(h3, rank);
@@ -258,7 +263,7 @@ function parseMjjYudBlock(block, startRank) {
   const results = [];
 
   // ブロック内の全h3を探す
-  const h3s = block.querySelectorAll("h3");
+  const h3s = block.querySelectorAll('h3, [role="heading"][aria-level="3"]');
 
   for (const h3 of h3s) {
     const title = cleanTitle(h3.textContent.trim());
@@ -318,7 +323,7 @@ function parseMjjYudBlock(block, startRank) {
 
 function parseOrganicBlock(block, rank) {
   // 従来のdiv.gベース（フォールバック）
-  const h3 = block.querySelector("h3");
+  const h3 = block.querySelector('h3, [role="heading"][aria-level="3"]');
   if (!h3) return null;
 
   const title = h3.textContent.trim();
@@ -361,8 +366,10 @@ function parseFromH3_2026(h3, rank) {
 
 function cleanTitle(text) {
   if (!text) return "";
-  // URL文字列を除去（http:// または https:// で始まる部分）
+  // URL文字列を除去（https://... 形式）
   let cleaned = text.replace(/https?:\/\/[^\s\u3000]+/g, "").trim();
+  // ドメイン形式のテキストも除去（例: "www.example.com" "example.co.jp"）
+  cleaned = cleaned.replace(/(?:www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\.[a-zA-Z]{2,})?(?:\/[^\s\u3000]*)?/g, "").trim();
   // 連続する空白を1つに
   cleaned = cleaned.replace(/\s+/g, " ");
   return cleaned;
@@ -432,7 +439,7 @@ function findSnippet(h3, container) {
   const elements = searchBlock.querySelectorAll("div, span");
   for (const el of elements) {
     // h3自体やそのコンテナはスキップ
-    if (el.querySelector("h3") || el.closest("h3")) continue;
+    if (el.querySelector('h3, [role="heading"][aria-level="3"]') || el.closest('h3, [role="heading"][aria-level="3"]')) continue;
     const text = el.textContent.trim();
     if (text.length > 30 && text !== title && !text.startsWith(title)) {
       return text.substring(0, 300);

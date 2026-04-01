@@ -143,35 +143,10 @@ def _run_analysis(session_id, location_label, all_organic, all_ads):
                 "has_ogp": site_info["has_ogp"],
                 "page_text_length": site_info["page_text_length"],
                 "site_status": site_info["site_status"],
-                # 第2層・第3層用（初期値）
-                "cms_detected": site_info.get("cms_detected"),
-                "is_column_page": False,
-                "column_reason": None,
-                "top_page_url": None,
-                "site_link_count": None,
-                "site_type": None,
-                # soup（分類用。DBには保存しない）
-                "soup": site_info.get("soup"),
-                # 第2層材料
-                "url_path_keywords": site_info.get("url_path_keywords", []),
-                "breadcrumb_keywords": site_info.get("breadcrumb_keywords", []),
-                "heading_count": site_info.get("heading_count", 0),
-                "text_depth": site_info.get("text_depth", 0),
-                "outer_link_count": site_info.get("outer_link_count", 0),
             }
 
-            # 分類（classify内で第2層・第3層の結果がresult_dataに設定される）
+            # 分類
             result_data["category"] = classify(result_data)
-
-            # soupはDB保存不要なので削除
-            result_data.pop("soup", None)
-            # リスト型もDB保存不要
-            result_data.pop("url_path_keywords", None)
-            result_data.pop("breadcrumb_keywords", None)
-            result_data.pop("heading_count", None)
-            result_data.pop("text_depth", None)
-            result_data.pop("outer_link_count", None)
-
             insert_result(session_id, result_data)
 
             # 同一ドメインへの連続アクセス時のみ1秒待機
@@ -230,7 +205,6 @@ def results(session_id):
 
         portal_count = category_counts.get("ポータル", 0)
         major_count = category_counts.get("大手", 0)
-        column_count = category_counts.get("コラム", 0)
         seo_yes_count = category_counts.get("企業HP（SEOあり）", 0)
         seo_no_count = category_counts.get("企業HP（SEOなし）", 0)
         other_count = category_counts.get("その他", 0)
@@ -257,7 +231,6 @@ def results(session_id):
             "bottom_ads_count": len(bottom_ads),
             "portal_count": portal_count,
             "major_count": major_count,
-            "column_count": column_count,
             "seo_yes_count": seo_yes_count,
             "seo_no_count": seo_no_count,
             "other_count": other_count,
@@ -298,7 +271,6 @@ def export_csv(session_id):
     writer.writerow(["広告", len([r for r in all_results if r["is_ad"]])])
     writer.writerow(["ポータル", category_counts.get("ポータル", 0)])
     writer.writerow(["大手", category_counts.get("大手", 0)])
-    writer.writerow(["コラム", category_counts.get("コラム", 0)])
     writer.writerow(["その他", category_counts.get("その他", 0)])
     writer.writerow(["企業HP（SEOあり）", category_counts.get("企業HP（SEOあり）", 0)])
     writer.writerow(["企業HP（SEOなし）", category_counts.get("企業HP（SEOなし）", 0)])
@@ -310,8 +282,7 @@ def export_csv(session_id):
     writer.writerow([
         "地域", "順位", "分類", "タイトル", "URL", "スニペット",
         "広告", "広告位置", "meta_desc有無", "meta_desc文字数",
-        "構造化データ有無", "OGP有無", "ページ文字量", "取得状態",
-        "CMS検出", "コラム判定", "トップページURL", "サイト内リンク数", "サイト種別"
+        "構造化データ有無", "OGP有無", "ページ文字量", "取得状態"
     ])
 
     for r in all_results:
@@ -330,11 +301,6 @@ def export_csv(session_id):
             "○" if r["has_ogp"] else "×" if r["has_ogp"] is not None else "-",
             r["page_text_length"] if r["page_text_length"] is not None else "-",
             r["site_status"] or "-",
-            r.get("cms_detected") or "-",
-            "○" if r.get("is_column_page") else "-",
-            r.get("top_page_url") or "-",
-            r.get("site_link_count") if r.get("site_link_count") is not None else "-",
-            r.get("site_type") or "-",
         ])
 
     query = session["query"] or "serp"

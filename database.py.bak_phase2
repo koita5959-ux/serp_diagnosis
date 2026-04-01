@@ -48,30 +48,9 @@ def init_db():
             has_ogp BOOLEAN,
             page_text_length INTEGER,
             site_status TEXT,
-            cms_detected TEXT,
-            is_column_page BOOLEAN,
-            column_reason TEXT,
-            top_page_url TEXT,
-            site_link_count INTEGER,
-            site_type TEXT,
             FOREIGN KEY (session_id) REFERENCES sessions(id)
         )
     """)
-
-    # 既存テーブルへのカラム追加（マイグレーション）
-    new_columns = [
-        ("cms_detected", "TEXT"),
-        ("is_column_page", "BOOLEAN"),
-        ("column_reason", "TEXT"),
-        ("top_page_url", "TEXT"),
-        ("site_link_count", "INTEGER"),
-        ("site_type", "TEXT"),
-    ]
-    for col_name, col_type in new_columns:
-        try:
-            cursor.execute(f"ALTER TABLE results ADD COLUMN {col_name} {col_type}")
-        except sqlite3.OperationalError:
-            pass  # カラムが既に存在する場合
 
     conn.commit()
     conn.close()
@@ -107,10 +86,8 @@ def insert_result(session_id, result_data):
             session_id, location_name, rank, title, url, snippet,
             is_ad, ad_position, page, category,
             has_meta_desc, meta_desc_length, has_structured_data,
-            has_ogp, page_text_length, site_status,
-            cms_detected, is_column_page, column_reason,
-            top_page_url, site_link_count, site_type
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            has_ogp, page_text_length, site_status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         session_id,
         result_data.get("location_name"),
@@ -128,12 +105,6 @@ def insert_result(session_id, result_data):
         result_data.get("has_ogp"),
         result_data.get("page_text_length"),
         result_data.get("site_status"),
-        result_data.get("cms_detected"),
-        result_data.get("is_column_page"),
-        result_data.get("column_reason"),
-        result_data.get("top_page_url"),
-        result_data.get("site_link_count"),
-        result_data.get("site_type"),
     ))
     conn.commit()
     conn.close()

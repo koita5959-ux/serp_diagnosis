@@ -47,16 +47,8 @@
                             <span class="summary-detail">上部{{ data.top_ads_count }}件・下部{{ data.bottom_ads_count }}件</span>
                         </div>
                         <div class="summary-item summary-portal">
-                            <span class="summary-label">ポータル</span>
+                            <span class="summary-label">ポータル・大手</span>
                             <span class="summary-value">{{ data.portal_count }}件</span>
-                        </div>
-                        <div class="summary-item summary-major">
-                            <span class="summary-label">大手</span>
-                            <span class="summary-value">{{ data.major_count }}件</span>
-                        </div>
-                        <div class="summary-item summary-column">
-                            <span class="summary-label">コラム</span>
-                            <span class="summary-value">{{ data.column_count }}件</span>
                         </div>
                         <div class="summary-item summary-seo-yes">
                             <span class="summary-label">企業HP（SEOあり）</span>
@@ -69,7 +61,7 @@
                         </div>
                         <div class="summary-item summary-other">
                             <span class="summary-label">その他</span>
-                            <span class="summary-value">{{ data.other_count }}件</span>
+                            <span class="summary-value">{{ data.other_public + data.other_media }}件</span>
                         </div>
                     </div>
 
@@ -150,25 +142,5 @@
             document.getElementById('tab-' + locName).classList.add('active');
         }
     </script>
-
-    {% if session.status == 'running' %}
-    <script>
-    (function() {
-        const sessionId = "{{ session.id }}";
-        const interval = setInterval(async () => {
-            try {
-                const res = await fetch(`/api/status/${sessionId}`);
-                const data = await res.json();
-                if (data.status !== "running") {
-                    clearInterval(interval);
-                    location.reload();
-                }
-            } catch (e) {
-                console.error("ステータス確認エラー:", e);
-            }
-        }, 3000);
-    })();
-    </script>
-    {% endif %}
 </body>
 </html>

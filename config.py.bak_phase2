@@ -98,20 +98,6 @@ SEO_THRESHOLDS = {
     "structured_data_min_count": 1,
 }
 
-# 第2層：コラム判定閾値
-COLUMN_THRESHOLDS = {
-    "min_text_length": 2000,    # コラム判定に必要な最低テキスト文字数
-    "min_heading_count": 4,     # 条件3に必要な最低見出し数（h2+h3）
-    "min_text_depth": 5,        # 条件3に必要な最低テキスト集中階層深さ
-}
-
-# 第3層：サイト規模判定閾値
-SITE_ANALYSIS_THRESHOLDS = {
-    "max_internal_links": 30,   # サイト内リンク数の上限（これ以下ならローカル企業規模）
-    "max_key_pages": 3,         # 主要ページの最大取得数
-    "access_interval": 2,       # アクセス間隔（秒）
-}
-
 # サーバー設定
 SERVER_HOST = "0.0.0.0"
 SERVER_PORT = 5112

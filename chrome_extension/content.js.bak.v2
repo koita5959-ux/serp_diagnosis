@@ -105,12 +105,10 @@ function parseAdContainer2026(container, position, adsList) {
   const h3s = container.querySelectorAll('h3, [role="heading"][aria-level="3"]');
   if (h3s.length > 0) {
     for (const h3 of h3s) {
-      const title = cleanTitle(h3.textContent.trim());
+      const title = h3.textContent.trim();
       if (!title) continue;
       let url = findUrl(h3, container);
-      // 個別の広告ブロック内でスニペットを探す（container全体ではなく）
-      const adBlock = h3.closest("div.MjjYud") || h3.closest("[data-text-ad]") || h3.closest(".uEierd") || h3.parentElement?.parentElement?.parentElement;
-      let snippet = findSnippet(h3, adBlock || container);
+      let snippet = findSnippet(h3, container);
       if (title && url) {
         adsList.push({ title, url, snippet, position });
       }
@@ -201,20 +199,39 @@ function parseBlockForAd(block, position) {
 // オーガニック結果の抽出
 // =====================
 function extractOrganic(organicList) {
-  let rank = 1;
-  const seenUrls = new Set();
+  const searchContainer = document.querySelector("#rso") || document.querySelector("#search");
+  if (!searchContainer) return;
 
-  // ========================================
-  // フェーズ1: #rso 内の結果を取得（従来ロジック）
-  // ========================================
-  const rso = document.querySelector("#rso");
-  if (rso) {
-    const mjjBlocks = rso.querySelectorAll("div.MjjYud");
-    if (mjjBlocks.length > 0) {
-      for (const block of mjjBlocks) {
+  let rank = 1;
+  const seenUrls = new Set();  // 重複チェック用
+
+  // 方法1: div.MjjYud ベース（2026年版Google）
+  const mjjBlocks = searchContainer.querySelectorAll("div.MjjYud");
+  if (mjjBlocks.length > 0) {
+    for (const block of mjjBlocks) {
+      // 広告コンテナ内はスキップ
+      if (block.closest("#tads") || block.closest("#bottomads")) continue;
+
+      const results = parseMjjYudBlock(block, rank);
+      for (const result of results) {
+        if (seenUrls.has(result.url)) continue;
+        seenUrls.add(result.url);
+        organicList.push(result);
+        rank++;
+      }
+    }
+  }
+
+  // 方法2: div.g ベース（従来版フォールバック）
+  if (organicList.length === 0) {
+    const gBlocks = searchContainer.querySelectorAll("div.g");
+    if (gBlocks.length > 0) {
+      for (const block of gBlocks) {
         if (block.closest("#tads") || block.closest("#bottomads")) continue;
-        const results = parseMjjYudBlock(block, rank);
-        for (const result of results) {
+        if (block.parentElement.closest("div.g")) continue;
+
+        const result = parseOrganicBlock(block, rank);
+        if (result) {
           if (seenUrls.has(result.url)) continue;
           seenUrls.add(result.url);
           organicList.push(result);
@@ -224,34 +241,10 @@ function extractOrganic(organicList) {
     }
   }
 
-  // ========================================
-  // フェーズ2: #rso 外の追加読み込み結果を取得
-  // ========================================
-  // 「そのほかの検索結果」で追加読み込みされた結果は#rsoの外に配置される。
-  // #botstuff やその他の領域にあるMjjYudブロックを走査する。
-  const allMjjBlocks = document.querySelectorAll("div.MjjYud");
-  for (const block of allMjjBlocks) {
-    // #rso内は既に処理済み → スキップ
-    if (rso && rso.contains(block)) continue;
-    // 広告コンテナ内はスキップ
-    if (block.closest("#tads") || block.closest("#bottomads")) continue;
-
-    const results = parseMjjYudBlock(block, rank);
-    for (const result of results) {
-      if (seenUrls.has(result.url)) continue;
-      seenUrls.add(result.url);
-      organicList.push(result);
-      rank++;
-    }
-  }
-
-  // ========================================
-  // フェーズ3: MjjYudに含まれないheading要素のフォールバック
-  // ========================================
-  // MjjYudブロックに属さない検索結果がある場合に対応
+  // 方法3: h3ベース（最終フォールバック）
   if (organicList.length === 0) {
-    const allHeadings = document.querySelectorAll('[role="heading"][aria-level="3"], h3');
-    for (const h3 of allHeadings) {
+    const h3s = searchContainer.querySelectorAll('h3, [role="heading"][aria-level="3"]');
+    for (const h3 of h3s) {
       if (h3.closest("#tads") || h3.closest("#bottomads")) continue;
       const result = parseFromH3_2026(h3, rank);
       if (result) {
@@ -276,16 +269,9 @@ function parseMjjYudBlock(block, startRank) {
     const title = cleanTitle(h3.textContent.trim());
     if (!title) continue;
 
-    // 非オーガニック要素のスキップ
-    const skipTitles = [
-      "地図", "さらに表示", "関連する質問",
-      "他の人はこちらも質問", "強調スニペットについて",
-      "その他のお店やサービス", "ウェブ検索結果",
-      "画像", "動画", "ニュース", "ショッピング",
-      "他の人はこちらも検索", "関連キーワード",
-      "トップニュース", "レシピ", "求人",
-    ];
-    if (skipTitles.includes(title)) continue;
+    // 「地図」「さらに表示」などの非結果h3をスキップ
+    if (title === "地図" || title === "さらに表示" || title === "関連する質問" ||
+        title === "他の人はこちらも質問" || title === "強調スニペットについて") continue;
 
     // URL取得: h3内部のa → h3のclosest(a) → 周辺のa
     let url = findUrl(h3, block);
@@ -358,16 +344,9 @@ function parseFromH3_2026(h3, rank) {
   const title = h3.textContent.trim();
   if (!title) return null;
 
-  // 非オーガニック要素のスキップ
-  const skipTitles = [
-    "地図", "さらに表示", "関連する質問",
-    "他の人はこちらも質問", "強調スニペットについて",
-    "その他のお店やサービス", "ウェブ検索結果",
-    "画像", "動画", "ニュース", "ショッピング",
-    "他の人はこちらも検索", "関連キーワード",
-    "トップニュース", "レシピ", "求人",
-  ];
-  if (skipTitles.includes(title)) return null;
+  // 非結果h3をスキップ
+  if (title === "地図" || title === "さらに表示" || title === "関連する質問" ||
+      title === "他の人はこちらも質問" || title === "強調スニペットについて") return null;
 
   // URL取得: 複数の方法で探す
   let url = findUrl(h3, null);
@@ -493,15 +472,13 @@ function cleanUrl(href) {
 
   // 通常の外部URL
   if (href.startsWith("http")) {
+    // フラグメントやトラッキングパラメータを除去
     try {
       const url = new URL(href);
       // #:~:text= のようなフラグメントを除去
       if (url.hash && url.hash.includes(":~:text=")) {
-        url.hash = "";
+        return url.origin + url.pathname + url.search;
       }
-      // Googleトラッキングパラメータを除去
-      url.searchParams.delete("srsltid");
-      return url.toString();
     } catch (e) {}
     return href;
   }

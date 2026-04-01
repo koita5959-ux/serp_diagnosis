@@ -47,16 +47,8 @@
                             <span class="summary-detail">上部{{ data.top_ads_count }}件・下部{{ data.bottom_ads_count }}件</span>
                         </div>
                         <div class="summary-item summary-portal">
-                            <span class="summary-label">ポータル</span>
+                            <span class="summary-label">ポータル・大手</span>
                             <span class="summary-value">{{ data.portal_count }}件</span>
-                        </div>
-                        <div class="summary-item summary-major">
-                            <span class="summary-label">大手</span>
-                            <span class="summary-value">{{ data.major_count }}件</span>
-                        </div>
-                        <div class="summary-item summary-column">
-                            <span class="summary-label">コラム</span>
-                            <span class="summary-value">{{ data.column_count }}件</span>
                         </div>
                         <div class="summary-item summary-seo-yes">
                             <span class="summary-label">企業HP（SEOあり）</span>

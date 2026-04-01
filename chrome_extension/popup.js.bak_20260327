@@ -84,22 +84,13 @@ async function onRead() {
         return;
       }
 
-      // 同じURLからの読み取りの場合、件数が増えていれば上書き（追加読み込みされた結果を反映）
-      const existingIndex = accumulatedData.findIndex(p => p.url === data.url);
-      if (existingIndex >= 0) {
-        const existingCount = accumulatedData[existingIndex].organic.length + accumulatedData[existingIndex].ads.length;
-        const newCount = data.organic.length + data.ads.length;
-        if (newCount > existingCount) {
-          // 追加読み込みで増えた → 上書き
-          accumulatedData[existingIndex] = data;
-          await chrome.storage.local.set({ accumulatedData });
-          updateUI();
-          showMessage(`${newCount}件に更新しました（+${newCount - existingCount}件）`, "success");
-          return;
-        } else {
-          showMessage(`変化なし（${existingCount}件のまま）。「そのほかの検索結果」を押してから再読み取りしてください`, "info");
-          return;
-        }
+      // 同じページの重複チェック
+      const isDuplicate = accumulatedData.some(
+        p => p.url === data.url
+      );
+      if (isDuplicate) {
+        showMessage("このページは既に読み取り済みです", "error");
+        return;
       }
 
       accumulatedData.push(data);

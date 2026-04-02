@@ -73,6 +73,16 @@ def init_db():
         except sqlite3.OperationalError:
             pass  # カラムが既に存在する場合
 
+    # sessionsテーブルへのカラム追加
+    session_new_columns = [
+        ("total_count", "INTEGER"),
+    ]
+    for col_name, col_type in session_new_columns:
+        try:
+            cursor.execute(f"ALTER TABLE sessions ADD COLUMN {col_name} {col_type}")
+        except sqlite3.OperationalError:
+            pass
+
     conn.commit()
     conn.close()
 
@@ -96,6 +106,13 @@ def create_session(query, device, locations):
 def update_session_status(session_id, status):
     conn = get_connection()
     conn.execute("UPDATE sessions SET status = ? WHERE id = ?", (status, session_id))
+    conn.commit()
+    conn.close()
+
+
+def update_session_total_count(session_id, total_count):
+    conn = get_connection()
+    conn.execute("UPDATE sessions SET total_count = ? WHERE id = ?", (total_count, session_id))
     conn.commit()
     conn.close()
 

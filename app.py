@@ -9,7 +9,7 @@ from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, jsonify, Response
 
 from config import LOCATIONS, SERVER_HOST, SERVER_PORT
-from database import init_db, create_session, update_session_status, insert_result, get_session, get_all_sessions, get_results, get_results_count
+from database import init_db, create_session, update_session_status, update_session_total_count, insert_result, get_session, get_all_sessions, get_results, get_results_count
 from analyzer import analyze_url
 from classifier import classify
 
@@ -77,6 +77,9 @@ def api_analyze():
         # セッション作成（location_nameは "Chrome拡張" 固定）
         location_label = "Chrome拡張"
         session_id = create_session(query, device, [{"name": location_label}])
+
+        # トータル件数を保存
+        update_session_total_count(session_id, total_items)
 
         # バックグラウンドで分析実行
         thread = threading.Thread(
@@ -200,6 +203,7 @@ def api_status(session_id):
     return jsonify({
         "status": session["status"],
         "result_count": get_results_count(session_id),
+        "total_count": session.get("total_count") or 0,
     })
 
 

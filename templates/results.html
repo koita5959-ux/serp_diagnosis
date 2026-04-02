@@ -23,6 +23,17 @@
             </div>
         </div>
 
+        {% if session.status == 'running' %}
+        <div class="card" id="progress-card">
+            <div class="progress-section">
+                <div class="progress-text" id="progress-text">処理中: 0 / {{ session.total_count or '?' }} 件完了</div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- 地域タブ -->
         <div class="tab-container">
             <div class="tab-nav">
@@ -155,13 +166,31 @@
     <script>
     (function() {
         const sessionId = "{{ session.id }}";
+        const progressBar = document.getElementById("progress-bar");
+        const progressText = document.getElementById("progress-text");
+        const progressCard = document.getElementById("progress-card");
+
         const interval = setInterval(async () => {
             try {
                 const res = await fetch(`/api/status/${sessionId}`);
                 const data = await res.json();
+
+                // プログレスバー更新
+                const done = data.result_count || 0;
+                const total = data.total_count || 0;
+                if (total > 0) {
+                    const pct = Math.min(Math.round((done / total) * 100), 100);
+                    progressBar.style.width = pct + "%";
+                    progressText.textContent = `処理中: ${done} / ${total} 件完了（${pct}%）`;
+                } else {
+                    progressText.textContent = `処理中: ${done} 件完了`;
+                }
+
                 if (data.status !== "running") {
                     clearInterval(interval);
-                    location.reload();
+                    progressBar.style.width = "100%";
+                    progressText.textContent = `完了: ${done} / ${total} 件`;
+                    setTimeout(() => location.reload(), 500);
                 }
             } catch (e) {
                 console.error("ステータス確認エラー:", e);

@@ -303,6 +303,7 @@ select:focus {
     gap: 4px;
     margin-bottom: 0;
     overflow-x: auto;
+    overflow-y: hidden;
 }
 
 .tab-btn {

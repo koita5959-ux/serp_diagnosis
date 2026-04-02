@@ -90,6 +90,7 @@ MEDIA_DOMAINS = [
     "allabout.co.jp", "travelbook.co.jp",
     "iekoma.com", "makit.jp", "housejoho.com",
     "shuminoengei.jp",
+    "nifty.com",
 ]
 
 # SEO判定閾値

@@ -63,6 +63,16 @@ def classify(result):
         return "広告"
 
     url = result.get("url", "")
+
+    # 1.5 HTML取得失敗 → 判定不能のため「その他」
+    site_status = result.get("site_status", "")
+    if site_status in ("timeout", "blocked", "error"):
+        return "その他"
+
+    # 1.6 PDF → サイト分析対象外のため「その他」
+    if url.lower().endswith(".pdf"):
+        return "その他"
+
     try:
         parsed = urlparse(url)
         domain = parsed.netloc.lower()
